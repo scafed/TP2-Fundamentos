@@ -6,6 +6,7 @@
 #define MODO_LECTURA "r"
 #define MODO_ESCRITURA "w"
 #define FORMATO_ARCHIVO_BARCO "%d;%d;%c;%d\n"
+#define CANTIDAD_DATOS_POR_LINEA 4
 #define DIRECCION_NORTE 'N'
 #define DIRECCION_SUR 'S'
 #define DIRECCION_ESTE 'E'
@@ -19,8 +20,13 @@
 
 const int ERROR_ARGUMENTOS = 4;
 const int ERROR_ARCHIVO_APERTURA = 3;
-const int POS_ARCHIVO_BARCO = 1;
-const int POS_ARCHIVO_REPORTE = 2;
+const int ERROR_ARCHIVO_BARCOS_VACIO = 5;
+const int ERROR_LEER_FORMATO_ARCHIVO_BARCOS = 6;
+const int ERROR_BARCO_FUERA_DEL_TABLERO = 7;
+const int ERROR_AL_RESERVAR_MEMORIA = -1;
+const int OK = 1;
+const int POSICION_ARCHIVO_BARCO = 1;
+const int POSICION_ARCHIVO_REPORTE = 2;
 
 
 bool validar_argumentos(int argc) {
@@ -31,50 +37,65 @@ bool validar_argumentos(int argc) {
     return true;
 }
 
-void leer_barcos (FILE* archivo_barcos, barco_t barcos_jugador[]) {
-    int fila = 0, columna = 0, largo = 0;
+int jugador_crear (FILE* archivo_barcos, barco_t barcos_jugador[]) {
+    coordenada_t coordenada = {0, 0}; 
+    int largo = 0;
     char direccion = ' ';
 
-    int cant_barcos_leidos = 0;
+    int cant_barcos_actual = 0;
     int datos_leidos = 0;
-    bool es_valido = true;
-
-    datos_leidos = fscanf(archivo_barcos, FORMATO_ARCHIVO_BARCO, &fila, &columna, &direccion, &largo);
+    bool error_formato_archivo = false;
+    bool error_barco_invalido = false;
+    bool error_al_reservar_memoria = false;
     
-    while (datos_leidos != EOF && es_valido) {
+    datos_leidos = fscanf(archivo_barcos, FORMATO_ARCHIVO_BARCO, &coordenada.fila, &coordenada.columna, &direccion, &largo);
 
-        if (cant_barcos_leidos >= CANT_BARCOS) {
-            es_valido = false;
-        }
+    if (datos_leidos == EOF) {
+        printf("ERROR AL LEER EL ARCHIVO BARCOS, SE ENCUENTRA VACÍO\n");
+        return ERROR_ARCHIVO_BARCOS_VACIO;
+    }
+    
+    while (datos_leidos != EOF && cant_barcos_actual >= CANT_BARCOS && !error_formato_archivo && !error_barco_invalido && !error_al_reservar_memoria) {
+        if (datos_leidos != CANTIDAD_DATOS_POR_LINEA) {
+            error_formato_archivo = true;
+        } 
+        else {
+            if (!es_coordenada_valida(coordenada) || !es_direccion_valida(direccion) || !es_largo_valido(largo)) {
+                error_barco_invalido = true;
+            }
+            else {
+                if (crear_barco(&barcos_jugador[cant_barcos_actual], coordenada, direccion, largo) == ERROR_AL_RESERVAR_MEMORIA) {
+                    error_al_reservar_memoria = true;
+                }
+                else {
+                    cant_barcos_actual++;
+                    if (hay_superposicion_de_barcos(barcos_jugador, cant_barcos_actual, coordenada)) {
 
-        if (es_valido && !es_coordenada_valida(fila, columna)) {
-            es_valido = false;
-        }
-
-        if (es_valido && !es_direccion_valida(direccion)) {
-            es_valido = false;
-        }
-
-        if (es_valido && !es_largo_valido(largo)) {
-            es_valido = false;
-        }
-
-        if (es_valido) {
-            if (!crear_barco(&barcos_jugador[cant_barcos_leidos], fila, columna, direccion, largo)) {
-                es_valido = false;
-            } else {
-                cant_barcos_leidos++;
+                    }
+                }
             }
         }
-
-        datos_leidos = fscanf(archivo_barcos, FORMATO_ARCHIVO_BARCO, &fila, &columna, &direccion, &largo);
+        
+        datos_leidos = fscanf(archivo_barcos, FORMATO_ARCHIVO_BARCO, &coordenada.fila, &coordenada.columna, &direccion, &largo);
     }
 
-    return;
+    if (error_formato_archivo) {
+        printf("ERROR AL LEER EL ARCHIVO BARCOS, EL FORMATO DE LOS DATOS ES INVÁLIDO\n");
+        return ERROR_LEER_FORMATO_ARCHIVO_BARCOS;
+    }
+
+    if (error_barco_invalido) {
+        return ERROR_BARCO_FUERA_DEL_TABLERO;
+    }
+    if (error_al_reservar_memoria) {
+        return ERROR_AL_RESERVAR_MEMORIA;
+    }
+
+    return OK;
 }
 
-bool es_coordenada_valida(int fila, int columna) {
-    if (fila < FILA_MIN_TABLERO || fila > FILA_MAX_TABLERO || columna < COLUMNA_MIN_TABLERO || columna > COLUMNA_MAX_TABLERO) {
+bool es_coordenada_valida(coordenada_t coordenada) {
+    if (coordenada.fila < FILA_MIN_TABLERO || coordenada.fila > FILA_MAX_TABLERO || coordenada.columna < COLUMNA_MIN_TABLERO || coordenada.columna > COLUMNA_MAX_TABLERO) {
         return false;
     }
     return true;
@@ -94,19 +115,20 @@ bool es_largo_valido(int largo) {
     return true;
 }
 
-bool crear_barco(barco_t *barco, int fila, int columna, char direccion, int largo) {
+int crear_barco(barco_t *barco, coordenada_t coordenada, char direccion, int largo) {
     int i = 0;
-    bool es_valido = true;
+    int fila = coordenada.fila;
+    int columna = coordenada.columna;
     
     barco->largo = largo;
 
     barco->posiciones = malloc(largo * sizeof(coordenada_t));
     if (barco->posiciones == NULL) {
         printf("ERROR AL RESERVAR MEMORIA PARA EL BARCO\n");
-        return false;
+        return ERROR_AL_RESERVAR_MEMORIA;
     }
 
-    while (i < largo && es_valido) {
+    while (i < barco->largo) {
         barco->posiciones[i].fila = fila;
         barco->posiciones[i].columna = columna;
 
@@ -125,24 +147,31 @@ bool crear_barco(barco_t *barco, int fila, int columna, char direccion, int larg
                 break;
         }
 
-        if (!es_coordenada_valida(fila, columna)) {
-            printf("ERROR AL CREAR EL BARCO, SE SUPERA EL LÍMITE DEL TABLERO\n");
-            es_valido = false;
-        }
+        i++;
+    }
 
-        if (esta_ocupada_por_barco(barco->posiciones, i)) {
-            printf("ERROR AL CREAR EL BARCO, LA COORDENADA YA ESTA OCUPADA\n");
-            es_valido = false;
+    return OK;
+}
+
+bool hay_superposicion_de_barcos(barco_t barcos_jugador[], int cant_barcos_leidos, coordenada_t coordenada) {
+    int i = 0;
+    bool hay_barco = false;
+    int fila = coordenada.fila;
+    int columna = coordenada.columna;
+
+    while (i < cant_barcos_leidos && !hay_barco) {
+        if (barcos_jugador[i].posiciones->fila == fila && barcos_jugador[i].posiciones->columna == columna) {
+            hay_barco = true;
         }
 
         i++;
     }
 
-    if (!es_valido) {
-        free(barco->posiciones);
-    }
+    return hay_barco;
+}
 
-    return es_valido;
+void eliminar_barcos_jugador() {
+
 }
 
 
@@ -152,19 +181,21 @@ int main(int argc, char* argv[]) {
         return ERROR_ARGUMENTOS;
     }
 
-    FILE* archivo_barcos = fopen(argv[POS_ARCHIVO_BARCO], MODO_LECTURA);
+    FILE* archivo_barcos = fopen(argv[POSICION_ARCHIVO_BARCO], MODO_LECTURA);
     if (archivo_barcos == NULL) {
         printf("ERROR AL ABRIR EL ARCHIVO DE BARCOS\n");
         return ERROR_ARCHIVO_APERTURA;
     }
 
     barco_t barcos_jugador[CANT_BARCOS];
+     
+    jugador_crear(archivo_barcos, barcos_jugador);
 
-    leer_barcos(archivo_barcos, barcos_jugador);
+    
 
-    validar_barcos(barcos_jugador);
+    
 
-    FILE* archivo_reporte = fopen(argv[POS_ARCHIVO_REPORTE], MODO_ESCRITURA);
+    FILE* archivo_reporte = fopen(argv[POSICION_ARCHIVO_REPORTE], MODO_ESCRITURA);
     if (archivo_reporte == NULL) {
         printf("ERROR AL ABRIR EL ARCHIVO DE REPORTE\n");
         fclose(archivo_barcos);
@@ -177,6 +208,6 @@ int main(int argc, char* argv[]) {
     fclose(archivo_barcos);
     fclose(archivo_reporte);
 
-    return 0;
+    return OK;
 }
 
