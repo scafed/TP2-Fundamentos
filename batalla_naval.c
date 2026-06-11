@@ -5,7 +5,7 @@
 #define CANT_ARGUMENTOS 3
 #define MODO_LECTURA "r"
 #define MODO_ESCRITURA "w"
-#define FORMATO_ARCHIVO_BARCO "%d;%d;%c;%d\n"
+#define FORMATO_ARCHIVO_BARCO "%d;%d;%c;%d"
 #define CANTIDAD_DATOS_POR_LINEA 4
 #define DIRECCION_NORTE 'N'
 #define DIRECCION_SUR 'S'
@@ -55,7 +55,7 @@ int jugador_crear (FILE* archivo_barcos, barco_t barcos_jugador[]) {
         return ERROR_ARCHIVO_BARCOS_VACIO;
     }
     
-    while (datos_leidos != EOF && cant_barcos_actual >= CANT_BARCOS && !error_formato_archivo && !error_barco_invalido && !error_al_reservar_memoria) {
+    while (datos_leidos != EOF && cant_barcos_actual < CANT_BARCOS && !error_formato_archivo && !error_barco_invalido && !error_al_reservar_memoria) {
         if (datos_leidos != CANTIDAD_DATOS_POR_LINEA) {
             error_formato_archivo = true;
         } 
@@ -69,8 +69,8 @@ int jugador_crear (FILE* archivo_barcos, barco_t barcos_jugador[]) {
                 }
                 else {
                     cant_barcos_actual++;
-                    if (hay_superposicion_de_barcos(barcos_jugador, cant_barcos_actual, coordenada)) {
-
+                    if (hay_superposicion_de_barcos(barcos_jugador, cant_barcos_actual)) {
+                        error_barco_invalido = true;
                     }
                 }
             }
@@ -85,9 +85,11 @@ int jugador_crear (FILE* archivo_barcos, barco_t barcos_jugador[]) {
     }
 
     if (error_barco_invalido) {
+        printf("ERROR AL CREAR EL BARCO, SUS COORDENADAS ESTÁN FUERA DEL TABLERO\n");
         return ERROR_BARCO_FUERA_DEL_TABLERO;
     }
     if (error_al_reservar_memoria) {
+        printf("ERROR AL RESERVAR MEMORIA PARA EL BARCO\n");
         return ERROR_AL_RESERVAR_MEMORIA;
     }
 
@@ -117,57 +119,84 @@ bool es_largo_valido(int largo) {
 
 int crear_barco(barco_t *barco, coordenada_t coordenada, char direccion, int largo) {
     int i = 0;
-    int fila = coordenada.fila;
-    int columna = coordenada.columna;
+    bool es_coordenada_siguiente_valida = true;
     
     barco->largo = largo;
 
     barco->posiciones = malloc(largo * sizeof(coordenada_t));
     if (barco->posiciones == NULL) {
-        printf("ERROR AL RESERVAR MEMORIA PARA EL BARCO\n");
         return ERROR_AL_RESERVAR_MEMORIA;
     }
 
-    while (i < barco->largo) {
-        barco->posiciones[i].fila = fila;
-        barco->posiciones[i].columna = columna;
+    while (i < barco->largo && es_coordenada_siguiente_valida) {
+        barco->posiciones[i].fila = coordenada.fila;
+        barco->posiciones[i].columna = coordenada.columna;
 
         switch (direccion) {
             case DIRECCION_NORTE:
-                fila--;
+                coordenada.fila--;
                 break;
             case DIRECCION_SUR:
-                fila++;
+                coordenada.fila++;
                 break;
             case DIRECCION_ESTE:
-                columna++;
+                coordenada.columna++;
                 break;
             case DIRECCION_OESTE:
-                columna--;
+                coordenada.columna--;
                 break;
         }
 
+        if (!es_coordenada_valida(coordenada)) {
+            es_coordenada_siguiente_valida = false;
+        }
+
         i++;
+    }
+
+    if (!es_coordenada_siguiente_valida) {
+        return ERROR_BARCO_FUERA_DEL_TABLERO;
     }
 
     return OK;
 }
 
-bool hay_superposicion_de_barcos(barco_t barcos_jugador[], int cant_barcos_leidos, coordenada_t coordenada) {
-    int i = 0;
-    bool hay_barco = false;
-    int fila = coordenada.fila;
-    int columna = coordenada.columna;
+bool hay_superposicion_de_barcos(barco_t barcos_jugador[], int cant_barcos_leidos) {
+    int ultimo_barco = cant_barcos_leidos - 1;
+    bool hay_superposicion = false;
 
-    while (i < cant_barcos_leidos && !hay_barco) {
-        if (barcos_jugador[i].posiciones->fila == fila && barcos_jugador[i].posiciones->columna == columna) {
-            hay_barco = true;
+    int barco_anterior = 0;
+
+    while (barco_anterior < ultimo_barco && !hay_superposicion) {
+
+        int posicion_anterior = 0;
+
+        while (posicion_anterior < barcos_jugador[barco_anterior].largo &&
+               !hay_superposicion) {
+
+            int posicion_ultimo = 0;
+
+            while (posicion_ultimo < barcos_jugador[ultimo_barco].largo &&
+                   !hay_superposicion) {
+
+                if (barcos_jugador[barco_anterior].posiciones[posicion_anterior].fila ==
+                        barcos_jugador[ultimo_barco].posiciones[posicion_ultimo].fila &&
+                    barcos_jugador[barco_anterior].posiciones[posicion_anterior].columna ==
+                        barcos_jugador[ultimo_barco].posiciones[posicion_ultimo].columna) {
+
+                    hay_superposicion = true;
+                }
+
+                posicion_ultimo++;
+            }
+
+            posicion_anterior++;
         }
 
-        i++;
+        barco_anterior++;
     }
 
-    return hay_barco;
+    return hay_superposicion;
 }
 
 void eliminar_barcos_jugador() {
