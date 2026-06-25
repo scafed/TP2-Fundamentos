@@ -28,18 +28,18 @@
 #define HUNDIDO 'H'
 #define VACIO '-'
 #define BARCO 'B'
+#define ERROR_AL_RESERVAR_MEMORIA -1
+#define ERROR_ARGUMENTOS -2
+#define ERROR_ARCHIVO_APERTURA -3
+#define ERROR_ARCHIVO_BARCOS_VACIO -4
+#define ERROR_CANT_BARCOS_ARCHIVO_BARCOS -5
+#define ERROR_LEER_FORMATO_ARCHIVO_BARCOS -6
+#define ERROR_BARCO_FUERA_DEL_TABLERO -7
+#define ERROR_BARCO_SUPERPOSICION -8
+#define ERROR_BARCO_COMPOSICION_FLOTA -9
+#define ERROR_AL_CREAR_OPONENTE -10
+#define OK 0
 
-const int ERROR_AL_RESERVAR_MEMORIA = -1;
-const int ERROR_ARGUMENTOS = -2;
-const int ERROR_ARCHIVO_APERTURA = -3;
-const int ERROR_ARCHIVO_BARCOS_VACIO = -4;
-const int ERROR_CANT_BARCOS_ARCHIVO_BARCOS = -5;
-const int ERROR_LEER_FORMATO_ARCHIVO_BARCOS = -6;
-const int ERROR_BARCO_FUERA_DEL_TABLERO = -7;
-const int ERROR_BARCO_SUPERPOSICION = -8;
-const int ERROR_BARCO_COMPOSICION_FLOTA = -9;
-const int ERROR_AL_CREAR_OPONENTE = -10;
-const int OK = 1;
 const int POSICION_ARCHIVO_BARCO = 1;
 const int POSICION_ARCHIVO_REPORTE = 2;
 
@@ -54,83 +54,6 @@ bool validar_argumentos(int argc) {
         return false;
     }
     return true;
-}
-
-int jugador_crear (FILE* archivo_barcos, barco_t barcos_jugador[]) {
-    coordenada_t coordenada = {0, 0}; 
-    int largo = 0;
-    char direccion = ' ';
-
-    int cant_barcos_actual = 0;
-    int datos_leidos = 0;
-    int estado_crear_barco = 0;
-    bool error_formato_archivo = false;
-    bool error_barco_invalido = false;
-    bool error_al_reservar_memoria = false;
-    bool error_barco_superposicion = false;
-    
-    datos_leidos = fscanf(archivo_barcos, FORMATO_ARCHIVO_BARCO, &coordenada.fila, &coordenada.columna, &direccion, &largo);
-
-    if (datos_leidos == EOF) {
-        return ERROR_ARCHIVO_BARCOS_VACIO;
-    }
-    
-    while (datos_leidos != EOF && cant_barcos_actual < CANT_BARCOS && !error_formato_archivo && !error_barco_invalido && !error_al_reservar_memoria && !error_barco_superposicion) {
-        if (datos_leidos != CANTIDAD_DATOS_POR_LINEA) {
-            error_formato_archivo = true;
-        } 
-        else {
-            if (!es_coordenada_valida(coordenada) || !es_direccion_valida(direccion) || !es_largo_valido(largo)) {
-                error_barco_invalido = true;
-            }
-            else {
-                estado_crear_barco = crear_barco(&barcos_jugador[cant_barcos_actual], coordenada, direccion, largo);
-                if (estado_crear_barco == OK) {
-                    cant_barcos_actual++;
-                    if (hay_superposicion_de_barcos(barcos_jugador, cant_barcos_actual)) {
-                        error_barco_superposicion = true;
-                    }
-                }
-                else { 
-                    if (estado_crear_barco == ERROR_AL_RESERVAR_MEMORIA) {
-                        error_al_reservar_memoria = true;
-                    }
-                    else if (estado_crear_barco == ERROR_BARCO_FUERA_DEL_TABLERO) {
-                        error_barco_invalido = true;
-                    }
-                }
-            }
-        }
-        
-        datos_leidos = fscanf(archivo_barcos, FORMATO_ARCHIVO_BARCO, &coordenada.fila, &coordenada.columna, &direccion, &largo);
-    }
-
-    if (error_formato_archivo) {
-        eliminar_barcos_jugador(barcos_jugador, cant_barcos_actual);
-        return ERROR_LEER_FORMATO_ARCHIVO_BARCOS;
-    }
-    if (error_barco_invalido) {
-        eliminar_barcos_jugador(barcos_jugador, cant_barcos_actual);
-        return ERROR_BARCO_FUERA_DEL_TABLERO;
-    }
-    if (error_al_reservar_memoria) {
-        eliminar_barcos_jugador(barcos_jugador, cant_barcos_actual);
-        return ERROR_AL_RESERVAR_MEMORIA;
-    }
-    if (error_barco_superposicion) {
-        eliminar_barcos_jugador(barcos_jugador, cant_barcos_actual);
-        return ERROR_BARCO_SUPERPOSICION;
-    }
-    if (cant_barcos_actual != CANT_BARCOS) {
-        eliminar_barcos_jugador(barcos_jugador, cant_barcos_actual);
-        return ERROR_CANT_BARCOS_ARCHIVO_BARCOS;
-    }
-    if (!composicion_flota_valida(barcos_jugador)) {
-        eliminar_barcos_jugador(barcos_jugador, cant_barcos_actual);
-        return ERROR_BARCO_COMPOSICION_FLOTA;
-    }
-
-    return OK;
 }
 
 bool es_coordenada_valida(coordenada_t coordenada) {
@@ -160,7 +83,7 @@ int crear_barco(barco_t *barco, coordenada_t coordenada, char direccion, int lar
     
     barco->largo = largo;
 
-    barco->posiciones = malloc(largo * sizeof(coordenada_t));
+    barco->posiciones = malloc((size_t)largo * sizeof(coordenada_t));
     if (barco->posiciones == NULL) {
         return ERROR_AL_RESERVAR_MEMORIA;
     }
@@ -275,6 +198,83 @@ void eliminar_barcos_jugador(barco_t barcos_jugador[], int tope_barcos) {
         free(barcos_jugador[i].posiciones);
         i++;
     }
+}
+
+int jugador_crear (FILE* archivo_barcos, barco_t barcos_jugador[]) {
+    coordenada_t coordenada = {0, 0}; 
+    int largo = 0;
+    char direccion = ' ';
+
+    int cant_barcos_actual = 0;
+    int datos_leidos = 0;
+    int estado_crear_barco = 0;
+    bool error_formato_archivo = false;
+    bool error_barco_invalido = false;
+    bool error_al_reservar_memoria = false;
+    bool error_barco_superposicion = false;
+    
+    datos_leidos = fscanf(archivo_barcos, FORMATO_ARCHIVO_BARCO, &coordenada.fila, &coordenada.columna, &direccion, &largo);
+
+    if (datos_leidos == EOF) {
+        return ERROR_ARCHIVO_BARCOS_VACIO;
+    }
+    
+    while (datos_leidos != EOF && cant_barcos_actual < CANT_BARCOS && !error_formato_archivo && !error_barco_invalido && !error_al_reservar_memoria && !error_barco_superposicion) {
+        if (datos_leidos != CANTIDAD_DATOS_POR_LINEA) {
+            error_formato_archivo = true;
+        } 
+        else {
+            if (!es_coordenada_valida(coordenada) || !es_direccion_valida(direccion) || !es_largo_valido(largo)) {
+                error_barco_invalido = true;
+            }
+            else {
+                estado_crear_barco = crear_barco(&barcos_jugador[cant_barcos_actual], coordenada, direccion, largo);
+                if (estado_crear_barco == OK) {
+                    cant_barcos_actual++;
+                    if (hay_superposicion_de_barcos(barcos_jugador, cant_barcos_actual)) {
+                        error_barco_superposicion = true;
+                    }
+                }
+                else { 
+                    if (estado_crear_barco == ERROR_AL_RESERVAR_MEMORIA) {
+                        error_al_reservar_memoria = true;
+                    }
+                    else if (estado_crear_barco == ERROR_BARCO_FUERA_DEL_TABLERO) {
+                        error_barco_invalido = true;
+                    }
+                }
+            }
+        }
+        
+        datos_leidos = fscanf(archivo_barcos, FORMATO_ARCHIVO_BARCO, &coordenada.fila, &coordenada.columna, &direccion, &largo);
+    }
+
+    if (error_formato_archivo) {
+        eliminar_barcos_jugador(barcos_jugador, cant_barcos_actual);
+        return ERROR_LEER_FORMATO_ARCHIVO_BARCOS;
+    }
+    if (error_barco_invalido) {
+        eliminar_barcos_jugador(barcos_jugador, cant_barcos_actual);
+        return ERROR_BARCO_FUERA_DEL_TABLERO;
+    }
+    if (error_al_reservar_memoria) {
+        eliminar_barcos_jugador(barcos_jugador, cant_barcos_actual);
+        return ERROR_AL_RESERVAR_MEMORIA;
+    }
+    if (error_barco_superposicion) {
+        eliminar_barcos_jugador(barcos_jugador, cant_barcos_actual);
+        return ERROR_BARCO_SUPERPOSICION;
+    }
+    if (cant_barcos_actual != CANT_BARCOS) {
+        eliminar_barcos_jugador(barcos_jugador, cant_barcos_actual);
+        return ERROR_CANT_BARCOS_ARCHIVO_BARCOS;
+    }
+    if (!composicion_flota_valida(barcos_jugador)) {
+        eliminar_barcos_jugador(barcos_jugador, cant_barcos_actual);
+        return ERROR_BARCO_COMPOSICION_FLOTA;
+    }
+
+    return OK;
 }
 
 void inicializar_estado_flota(estado_barco_t flota_jugador[], barco_t barcos_jugador[]) {
