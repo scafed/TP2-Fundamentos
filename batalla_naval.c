@@ -13,16 +13,21 @@
 #define DIRECCION_SUR 'S'
 #define DIRECCION_ESTE 'E'
 #define DIRECCION_OESTE 'O'
-#define LARGO_BARCO_MINIMO 2
-#define LARGO_BARCO_MAXIMO 5
 #define FILA_MIN_TABLERO 1
 #define FILA_MAX_TABLERO 10
 #define COLUMNA_MIN_TABLERO 1
 #define COLUMNA_MAX_TABLERO 10
-#define CANT_BARCOS_LARGO_5 1
-#define CANT_BARCOS_LARGO_4 1
-#define CANT_BARCOS_LARGO_3 2
+#define CANT_BARCOS 5
 #define CANT_BARCOS_LARGO_2 1
+#define CANT_BARCOS_LARGO_3 2
+#define CANT_BARCOS_LARGO_4 1
+#define CANT_BARCOS_LARGO_5 1
+#define LARGO_BARCO_2 2
+#define LARGO_BARCO_3 3
+#define LARGO_BARCO_4 4
+#define LARGO_BARCO_5 5
+#define LARGO_BARCO_MINIMO 2
+#define LARGO_BARCO_MAXIMO 5
 #define AGUA 'A'
 #define TOCADO 'T'
 #define HUNDIDO 'H'
@@ -40,7 +45,7 @@
 #define ERROR_AL_CREAR_OPONENTE -10
 #define OK 0
 
-const int POSICION_ARCHIVO_BARCO = 1;
+const int POSICION_ARCHIVO_BARCOS = 1;
 const int POSICION_ARCHIVO_REPORTE = 2;
 
 typedef struct estado_barco {
@@ -48,35 +53,42 @@ typedef struct estado_barco {
     bool impactos[5];
 } estado_barco_t;
 
-
+/*
+ * PRE: 
+ * POST: 
+ */
 bool validar_argumentos(int argc) {
-    if (argc != CANT_ARGUMENTOS) {
-        return false;
-    }
-    return true;
+    return (argc == CANT_ARGUMENTOS);
 }
 
+/*
+ * PRE: 
+ * POST: 
+ */
 bool es_coordenada_valida(coordenada_t coordenada) {
-    if (coordenada.fila < FILA_MIN_TABLERO || coordenada.fila > FILA_MAX_TABLERO || coordenada.columna < COLUMNA_MIN_TABLERO || coordenada.columna > COLUMNA_MAX_TABLERO) {
-        return false;
-    }
-    return true;
+    return !((coordenada.fila < FILA_MIN_TABLERO) || (coordenada.fila > FILA_MAX_TABLERO) || (coordenada.columna < COLUMNA_MIN_TABLERO) || (coordenada.columna > COLUMNA_MAX_TABLERO));
 }
 
+/*
+ * PRE: 
+ * POST: 
+ */
 bool es_direccion_valida(char direccion) {
-    if (direccion != DIRECCION_NORTE && direccion != DIRECCION_SUR && direccion != DIRECCION_ESTE && direccion != DIRECCION_OESTE) {
-        return false;
-    }
-    return true;
+    return !((direccion != DIRECCION_NORTE) && (direccion != DIRECCION_SUR) && (direccion != DIRECCION_ESTE) && (direccion != DIRECCION_OESTE));
 }
 
+/*
+ * PRE: 
+ * POST: 
+ */
 bool es_largo_valido(int largo) {
-    if (largo < LARGO_BARCO_MINIMO || largo > LARGO_BARCO_MAXIMO) {
-        return false;
-    }
-    return true;
+    return !((largo < LARGO_BARCO_MINIMO) || (largo > LARGO_BARCO_MAXIMO));
 }
 
+/*
+ * PRE: 
+ * POST: 
+ */
 int crear_barco(barco_t *barco, coordenada_t coordenada, char direccion, int largo) {
     int i = 0;
     bool es_coordenada_siguiente_valida = true;
@@ -123,7 +135,11 @@ int crear_barco(barco_t *barco, coordenada_t coordenada, char direccion, int lar
     return OK;
 }
 
-bool hay_superposicion_de_barcos(barco_t barcos_jugador[], int cant_barcos_leidos) {
+/*
+ * PRE: 
+ * POST: 
+ */
+bool hay_superposicion_de_barcos(barco_t barcos_jugador[CANT_BARCOS], int cant_barcos_leidos) {
     int ultimo_barco = cant_barcos_leidos - 1;
     bool hay_superposicion = false;
 
@@ -154,7 +170,11 @@ bool hay_superposicion_de_barcos(barco_t barcos_jugador[], int cant_barcos_leido
     return hay_superposicion;
 }
 
-bool composicion_flota_valida(barco_t barcos_jugador[]) {
+/*
+ * PRE: 
+ * POST: 
+ */
+bool composicion_flota_valida(barco_t barcos_jugador[CANT_BARCOS]) {
     int cant_largo_2 = 0;
     int cant_largo_3 = 0;
     int cant_largo_4 = 0;
@@ -167,16 +187,16 @@ bool composicion_flota_valida(barco_t barcos_jugador[]) {
 
         switch (barcos_jugador[i].largo) {
 
-            case 2:
+            case LARGO_BARCO_2:
                 cant_largo_2++;
                 break;
-            case 3:
+            case LARGO_BARCO_3:
                 cant_largo_3++;
                 break;
-            case 4:
+            case LARGO_BARCO_4:
                 cant_largo_4++;
                 break;
-            case 5:
+            case LARGO_BARCO_5:
                 cant_largo_5++;
                 break;
         }
@@ -191,7 +211,11 @@ bool composicion_flota_valida(barco_t barcos_jugador[]) {
     return es_composicion_valida;
 }
 
-void eliminar_barcos_jugador(barco_t barcos_jugador[], int tope_barcos) {
+/*
+ * PRE: 
+ * POST: 
+ */
+void eliminar_barcos_jugador(barco_t barcos_jugador[CANT_BARCOS], int tope_barcos) {
     int i = 0;
 
     while (i < tope_barcos) {
@@ -200,7 +224,11 @@ void eliminar_barcos_jugador(barco_t barcos_jugador[], int tope_barcos) {
     }
 }
 
-int jugador_crear (FILE* archivo_barcos, barco_t barcos_jugador[]) {
+/*
+ * PRE: 
+ * POST: 
+ */
+int jugador_crear (FILE* archivo_barcos, barco_t barcos_jugador[CANT_BARCOS]) {
     coordenada_t coordenada = {0, 0}; 
     int largo = 0;
     char direccion = ' ';
@@ -219,7 +247,8 @@ int jugador_crear (FILE* archivo_barcos, barco_t barcos_jugador[]) {
         return ERROR_ARCHIVO_BARCOS_VACIO;
     }
     
-    while (datos_leidos != EOF && cant_barcos_actual < CANT_BARCOS && !error_formato_archivo && !error_barco_invalido && !error_al_reservar_memoria && !error_barco_superposicion) {
+    while ((datos_leidos != EOF) && (cant_barcos_actual < CANT_BARCOS) && (!error_formato_archivo) && (!error_barco_invalido) && (!error_al_reservar_memoria) && (!error_barco_superposicion)) {
+        
         if (datos_leidos != CANTIDAD_DATOS_POR_LINEA) {
             error_formato_archivo = true;
         } 
@@ -277,6 +306,10 @@ int jugador_crear (FILE* archivo_barcos, barco_t barcos_jugador[]) {
     return OK;
 }
 
+/*
+ * PRE: 
+ * POST: 
+ */
 void inicializar_estado_flota(estado_barco_t flota_jugador[], barco_t barcos_jugador[]) {
     int i = 0;
     int j = 0;
@@ -294,6 +327,10 @@ void inicializar_estado_flota(estado_barco_t flota_jugador[], barco_t barcos_jug
     }
 }
 
+/*
+ * PRE: 
+ * POST: 
+ */
 void inicializar_tablero(char tablero[FILA_MAX_TABLERO][COLUMNA_MAX_TABLERO]) {
     int fila = 0;
     int columna = 0;
@@ -311,6 +348,10 @@ void inicializar_tablero(char tablero[FILA_MAX_TABLERO][COLUMNA_MAX_TABLERO]) {
     }
 }
 
+/*
+ * PRE: 
+ * POST: 
+ */
 void cargar_barcos_en_tablero(char tablero[FILA_MAX_TABLERO][COLUMNA_MAX_TABLERO], barco_t barcos_jugador[]) {
     int i = 0;
     int j = 0;
@@ -335,6 +376,10 @@ void cargar_barcos_en_tablero(char tablero[FILA_MAX_TABLERO][COLUMNA_MAX_TABLERO
     }
 }
 
+/*
+ * PRE: 
+ * POST: 
+ */
 void mostrar_tableros(char tablero_jugador[FILA_MAX_TABLERO][COLUMNA_MAX_TABLERO], char tablero_oponente[FILA_MAX_TABLERO][COLUMNA_MAX_TABLERO]) {
     int fila = 0;
     int columna = 0;
@@ -366,6 +411,10 @@ void mostrar_tableros(char tablero_jugador[FILA_MAX_TABLERO][COLUMNA_MAX_TABLERO
     printf("\n");
 }
 
+/*
+ * PRE: 
+ * POST: 
+ */
 coordenada_t pedir_disparo_jugador()
 {
     coordenada_t disparo;
@@ -378,10 +427,18 @@ coordenada_t pedir_disparo_jugador()
     return disparo;
 }
 
+/*
+ * PRE: 
+ * POST: 
+ */
 void actualizar_tablero_enemigo(char tablero_oponente[FILA_MAX_TABLERO][COLUMNA_MAX_TABLERO], coordenada_t disparo, char resultado) {
     tablero_oponente[disparo.fila - 1][disparo.columna - 1] = resultado;
 }
 
+/*
+ * PRE: 
+ * POST: 
+ */
 void procesar_disparo_enemigo(coordenada_t disparo, estado_barco_t flota_jugador[], char tablero_jugador[FILA_MAX_TABLERO][COLUMNA_MAX_TABLERO]) {
     bool impacto = false;
 
@@ -411,7 +468,11 @@ void procesar_disparo_enemigo(coordenada_t disparo, estado_barco_t flota_jugador
     }
 }
 
-bool barco_hundido(estado_barco_t barco) {
+/*
+ * PRE: 
+ * POST: 
+ */
+bool es_barco_hundido(estado_barco_t barco) {
     int i = 0;
 
     while (i < barco.barco->largo) {
@@ -426,12 +487,16 @@ bool barco_hundido(estado_barco_t barco) {
     return true;
 }
 
-bool flota_jugador_hundida(estado_barco_t flota_jugador[]) {
+/*
+ * PRE: 
+ * POST: 
+ */
+bool es_flota_jugador_hundida(estado_barco_t flota_jugador[]) {
     int i = 0;
 
     while (i < CANT_BARCOS) {
 
-        if (!barco_hundido(flota_jugador[i])) {
+        if (!es_barco_hundido(flota_jugador[i])) {
             return false;
         }
 
@@ -441,6 +506,10 @@ bool flota_jugador_hundida(estado_barco_t flota_jugador[]) {
     return true;
 }
 
+/*
+ * PRE: 
+ * POST: 
+ */
 void generar_reporte(FILE* archivo_reporte, 
                     int balas_aliadas_acertadas, 
                     int balas_aliadas_erradas, 
@@ -464,6 +533,47 @@ void generar_reporte(FILE* archivo_reporte,
             barcos_aliados_sobrevivientes);
 }
 
+/*
+ * PRE: 
+ * POST: 
+ */
+void mostrar_error_jugador_crear(int estado_jugador_crear)
+{
+    switch (estado_jugador_crear) {
+
+        case ERROR_ARCHIVO_BARCOS_VACIO:
+            printf("ERROR AL LEER EL ARCHIVO BARCOS, SE ENCUENTRA VACÍO\n");
+            break;
+
+        case ERROR_CANT_BARCOS_ARCHIVO_BARCOS:
+            printf("ERROR AL LEER EL ARCHIVO BARCOS, LA CANTIDAD DE BARCOS ES INVÁLIDA\n");
+            break;
+
+        case ERROR_BARCO_COMPOSICION_FLOTA:
+            printf("ERROR AL LEER EL ARCHIVO BARCOS, LA COMPOSICIÓN DE LOS BARCOS ES INVÁLIDA\n");
+            break;
+
+        case ERROR_LEER_FORMATO_ARCHIVO_BARCOS:
+            printf("ERROR AL LEER EL ARCHIVO BARCOS, EL FORMATO DE LOS DATOS ES INVÁLIDO\n");
+            break;
+
+        case ERROR_BARCO_FUERA_DEL_TABLERO:
+            printf("ERROR AL CREAR EL BARCO, SUS COORDENADAS ESTÁN FUERA DEL TABLERO\n");
+            break;
+
+        case ERROR_AL_RESERVAR_MEMORIA:
+            printf("ERROR AL RESERVAR MEMORIA PARA EL BARCO\n");
+            break;
+
+        case ERROR_BARCO_SUPERPOSICION:
+            printf("ERROR AL CREAR EL BARCO, HAY SUPERPOSICIÓN, LAS COORDENADAS COINCIDEN CON OTRO BARCO\n");
+            break;
+        
+        default:
+            break;
+    }
+}
+
 
 int main(int argc, char* argv[]) {
 
@@ -472,7 +582,7 @@ int main(int argc, char* argv[]) {
         return ERROR_ARGUMENTOS;
     }
 
-    FILE* archivo_barcos = fopen(argv[POSICION_ARCHIVO_BARCO], MODO_LECTURA);
+    FILE* archivo_barcos = fopen(argv[POSICION_ARCHIVO_BARCOS], MODO_LECTURA);
     if (archivo_barcos == NULL) {
         printf("ERROR AL ABRIR EL ARCHIVO DE BARCOS\n");
         return ERROR_ARCHIVO_APERTURA;
@@ -480,37 +590,12 @@ int main(int argc, char* argv[]) {
 
     barco_t barcos_jugador[CANT_BARCOS];
      
-    switch(jugador_crear(archivo_barcos, barcos_jugador)) {
-        case ERROR_ARCHIVO_BARCOS_VACIO:
-            printf("ERROR AL LEER EL ARCHIVO BARCOS, SE ENCUENTRA VACÍO\n");
-            fclose(archivo_barcos);
-            return ERROR_ARCHIVO_BARCOS_VACIO;
-        case ERROR_CANT_BARCOS_ARCHIVO_BARCOS:
-            printf("ERROR AL LEER EL ARCHIVO BARCOS, LA CANTIDAD DE BARCOS ES INVÁLIDA\n");
-            fclose(archivo_barcos);
-            return ERROR_CANT_BARCOS_ARCHIVO_BARCOS;
-        case ERROR_BARCO_COMPOSICION_FLOTA:
-            printf("ERROR AL LEER EL ARCHIVO BARCOS, LA COMPOSICION DE LOS BARCOS ES INVÁLIDA\n");
-            fclose(archivo_barcos);
-            return ERROR_BARCO_COMPOSICION_FLOTA;
-        case ERROR_LEER_FORMATO_ARCHIVO_BARCOS:
-            printf("ERROR AL LEER EL ARCHIVO BARCOS, EL FORMATO DE LOS DATOS ES INVÁLIDO\n");
-            fclose(archivo_barcos);
-            return ERROR_LEER_FORMATO_ARCHIVO_BARCOS;
-        case ERROR_BARCO_FUERA_DEL_TABLERO:
-            printf("ERROR AL CREAR EL BARCO, SUS COORDENADAS ESTÁN FUERA DEL TABLERO\n");
-            fclose(archivo_barcos);
-            return ERROR_BARCO_FUERA_DEL_TABLERO;
-        case ERROR_AL_RESERVAR_MEMORIA:
-            printf("ERROR AL RESERVAR MEMORIA PARA EL BARCO\n");
-            fclose(archivo_barcos);
-            return ERROR_AL_RESERVAR_MEMORIA;
-        case ERROR_BARCO_SUPERPOSICION:
-            printf("ERROR AL CREAR EL BARCO, HAY SUPERPOSICION, LAS COORDENADAS COINCIDEN CON OTRO BARCO\n");
-            fclose(archivo_barcos);
-            return ERROR_BARCO_SUPERPOSICION;
-        default:
-            break;
+    int estado_jugador = jugador_crear(archivo_barcos, barcos_jugador);
+
+    if (estado_jugador != OK) {
+        mostrar_error_jugador_crear(estado_jugador);
+        fclose(archivo_barcos);
+        return estado_jugador;
     }
 
     FILE* archivo_reporte = fopen(argv[POSICION_ARCHIVO_REPORTE], MODO_ESCRITURA);
@@ -586,7 +671,7 @@ int main(int argc, char* argv[]) {
                 balas_enemigas_acertadas++;
             }
 
-            if (flota_jugador_hundida(flota_jugador)) {
+            if (es_flota_jugador_hundida(flota_jugador)) {
                 juego_terminado = true;
             }
         }
@@ -597,7 +682,7 @@ int main(int argc, char* argv[]) {
     int i = 0;
     while (i < CANT_BARCOS) {
 
-        if (!barco_hundido(flota_jugador[i])) {
+        if (!es_barco_hundido(flota_jugador[i])) {
             barcos_aliados_sobrevivientes++;
         }
 

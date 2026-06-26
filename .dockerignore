@@ -1,0 +1,30 @@
+# Ejecutables
+batalla_naval
+*.exe
+*.out
+
+# Archivos comprimidos
+*.zip
+*.tar
+*.gz
+
+# Reportes generados
+reporte.csv
+
+# Archivos temporales
+*.tmp
+*.swp
+*.swo
+*~
+
+# Configuración de editores
+.vscode/
+.idea/
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
