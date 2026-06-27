@@ -50,7 +50,7 @@ const int POSICION_ARCHIVO_REPORTE = 2;
 
 typedef struct estado_barco {
     barco_t* barco;
-    bool impactos[5];
+    bool impactos[LARGO_BARCO_MAXIMO];
 } estado_barco_t;
 
 /*
@@ -179,7 +179,6 @@ bool composicion_flota_valida(barco_t barcos_jugador[CANT_BARCOS]) {
     int cant_largo_3 = 0;
     int cant_largo_4 = 0;
     int cant_largo_5 = 0;
-    bool es_composicion_valida = false;
 
     int i = 0;
 
@@ -204,11 +203,7 @@ bool composicion_flota_valida(barco_t barcos_jugador[CANT_BARCOS]) {
         i++;
     }
 
-    if (cant_largo_2 == CANT_BARCOS_LARGO_2 && cant_largo_3 == CANT_BARCOS_LARGO_3 && cant_largo_4 == CANT_BARCOS_LARGO_4 && cant_largo_5 == CANT_BARCOS_LARGO_5) {
-        es_composicion_valida = true;
-    }
-
-    return es_composicion_valida;
+    return ((cant_largo_2 == CANT_BARCOS_LARGO_2) && (cant_largo_3 == CANT_BARCOS_LARGO_3) && (cant_largo_4 == CANT_BARCOS_LARGO_4) && (cant_largo_5 == CANT_BARCOS_LARGO_5));
 }
 
 /*
@@ -310,7 +305,7 @@ int jugador_crear (FILE* archivo_barcos, barco_t barcos_jugador[CANT_BARCOS]) {
  * PRE: 
  * POST: 
  */
-void inicializar_estado_flota(estado_barco_t flota_jugador[], barco_t barcos_jugador[]) {
+void inicializar_estado_flota(estado_barco_t flota_jugador[CANT_BARCOS], barco_t barcos_jugador[CANT_BARCOS]) {
     int i = 0;
     int j = 0;
 
@@ -420,7 +415,7 @@ coordenada_t pedir_disparo_jugador()
     coordenada_t disparo;
 
     do {
-        printf("Ingrese disparo (fila;columna): ");
+        printf("Ingrese disparo dentro del tablero (fila;columna): ");
         scanf(FORMATO_DISPARO_JUGADOR, &disparo.fila, &disparo.columna);
     } while (!es_coordenada_valida(disparo));
 
@@ -431,15 +426,15 @@ coordenada_t pedir_disparo_jugador()
  * PRE: 
  * POST: 
  */
-void actualizar_tablero_enemigo(char tablero_oponente[FILA_MAX_TABLERO][COLUMNA_MAX_TABLERO], coordenada_t disparo, char resultado) {
-    tablero_oponente[disparo.fila - 1][disparo.columna - 1] = resultado;
+void actualizar_tablero_enemigo(char tablero_oponente[FILA_MAX_TABLERO][COLUMNA_MAX_TABLERO], coordenada_t disparo_jugador, char resultado_del_disparo_jugador) {
+    tablero_oponente[disparo_jugador.fila - 1][disparo_jugador.columna - 1] = resultado_del_disparo_jugador;
 }
 
 /*
  * PRE: 
  * POST: 
  */
-void procesar_disparo_enemigo(coordenada_t disparo, estado_barco_t flota_jugador[], char tablero_jugador[FILA_MAX_TABLERO][COLUMNA_MAX_TABLERO]) {
+void procesar_disparo_enemigo(coordenada_t disparo_enemigo, estado_barco_t flota_jugador[CANT_BARCOS], char tablero_jugador[FILA_MAX_TABLERO][COLUMNA_MAX_TABLERO]) {
     bool impacto = false;
 
     int i = 0;
@@ -451,9 +446,9 @@ void procesar_disparo_enemigo(coordenada_t disparo, estado_barco_t flota_jugador
 
         while (j < flota_jugador[i].barco->largo && !impacto) {
 
-            if (flota_jugador[i].barco->posiciones[j].fila == disparo.fila && flota_jugador[i].barco->posiciones[j].columna == disparo.columna) {
+            if ((flota_jugador[i].barco->posiciones[j].fila == disparo_enemigo.fila) && (flota_jugador[i].barco->posiciones[j].columna == disparo_enemigo.columna)) {
                 flota_jugador[i].impactos[j] = true;
-                tablero_jugador[disparo.fila - 1][disparo.columna - 1] = TOCADO;
+                tablero_jugador[disparo_enemigo.fila - 1][disparo_enemigo.columna - 1] = TOCADO;
                 impacto = true;
             }
 
@@ -464,7 +459,7 @@ void procesar_disparo_enemigo(coordenada_t disparo, estado_barco_t flota_jugador
     }
 
     if (!impacto) {
-        tablero_jugador[disparo.fila - 1][disparo.columna - 1] = AGUA;
+        tablero_jugador[disparo_enemigo.fila - 1][disparo_enemigo.columna - 1] = AGUA;
     }
 }
 
@@ -474,36 +469,38 @@ void procesar_disparo_enemigo(coordenada_t disparo, estado_barco_t flota_jugador
  */
 bool es_barco_hundido(estado_barco_t barco) {
     int i = 0;
+    bool es_hundido = true;
 
-    while (i < barco.barco->largo) {
+    while (i < barco.barco->largo && es_hundido) {
 
         if (!barco.impactos[i]) {
-            return false;
+            es_hundido = false;
         }
 
         i++;
     }
 
-    return true;
+    return es_hundido;
 }
 
 /*
  * PRE: 
  * POST: 
  */
-bool es_flota_jugador_hundida(estado_barco_t flota_jugador[]) {
+bool es_flota_jugador_hundida(estado_barco_t flota_jugador[CANT_BARCOS]) {
     int i = 0;
+    bool flota_hundida = true;
 
-    while (i < CANT_BARCOS) {
+    while (i < CANT_BARCOS && flota_hundida) {
 
         if (!es_barco_hundido(flota_jugador[i])) {
-            return false;
+            flota_hundida = false;
         }
 
         i++;
     }
 
-    return true;
+    return flota_hundida;
 }
 
 /*
@@ -516,8 +513,8 @@ void generar_reporte(FILE* archivo_reporte,
                     int balas_enemigas_acertadas, 
                     int balas_enemigas_erradas, 
                     int barcos_enemigos_hundidos, 
-                    int barcos_aliados_sobrevivientes) 
-{
+                    int barcos_aliados_sobrevivientes) {
+
     fprintf(archivo_reporte,
             "Balas aliadas acertadas: %d\n"
             "Balas aliadas erradas: %d\n"
@@ -537,8 +534,8 @@ void generar_reporte(FILE* archivo_reporte,
  * PRE: 
  * POST: 
  */
-void mostrar_error_jugador_crear(int estado_jugador_crear)
-{
+void mostrar_error_jugador_crear(int estado_jugador_crear) {
+    
     switch (estado_jugador_crear) {
 
         case ERROR_ARCHIVO_BARCOS_VACIO:
@@ -574,9 +571,70 @@ void mostrar_error_jugador_crear(int estado_jugador_crear)
     }
 }
 
+/*
+ * PRE: 
+ * POST: 
+ */
+void actualizar_reporte_por_disparo_jugador(char resultado_disparo, int *balas_acertadas, int *balas_erradas, int *barcos_hundidos) {
+    if (resultado_disparo == AGUA) {
+        (*balas_erradas)++;
+    } else {
+        (*balas_acertadas)++;
+    }
+
+    if (resultado_disparo == HUNDIDO) {
+        (*barcos_hundidos)++;
+    }
+}
+
+/*
+ * PRE: 
+ * POST: 
+ */
+bool jugar_turno_enemigo(oponente_t *oponente, 
+                        estado_barco_t flota_jugador[CANT_BARCOS], 
+                        char tablero_jugador[FILA_MAX_TABLERO][COLUMNA_MAX_TABLERO], 
+                        int *balas_enemigas_acertadas, 
+                        int *balas_enemigas_erradas) {
+
+    coordenada_t disparo_enemigo = oponente_realiza_disparo(oponente);
+
+    disparo_enemigo.fila++;
+    disparo_enemigo.columna++;
+
+    procesar_disparo_enemigo(disparo_enemigo, flota_jugador, tablero_jugador);
+
+    if (tablero_jugador[disparo_enemigo.fila - 1][disparo_enemigo.columna - 1] == AGUA) {
+        (*balas_enemigas_erradas)++;
+    } else {
+        (*balas_enemigas_acertadas)++;
+    }
+
+    return es_flota_jugador_hundida(flota_jugador);
+}
+
+/*
+ * PRE: 
+ * POST: 
+ */
+int contar_barcos_aliados_sobrevivientes(estado_barco_t flota_jugador[CANT_BARCOS]) {
+    int i = 0;
+    int barcos_sobrevivientes = 0;
+
+    while (i < CANT_BARCOS) {
+
+        if (!es_barco_hundido(flota_jugador[i])) {
+            barcos_sobrevivientes++;
+        }
+
+        i++;
+    }
+
+    return barcos_sobrevivientes;
+}
+
 
 int main(int argc, char* argv[]) {
-
     if (!validar_argumentos(argc)) {
         printf("ERROR AL EJECUTAR EL PROGRAMA\nSe debe ejecutar el programa con dos argumentos: ./ejecutable <archivo_barcos> <archivo_reporte>\n");
         return ERROR_ARGUMENTOS;
@@ -641,53 +699,20 @@ int main(int argc, char* argv[]) {
 
         coordenada_t disparo_jugador = pedir_disparo_jugador();
 
-        char resultado = oponente_recibe_disparo(oponente, disparo_jugador);
+        char resultado_del_disparo_jugador = oponente_recibe_disparo(oponente, disparo_jugador);
 
-        actualizar_tablero_enemigo(tablero_oponente, disparo_jugador, resultado);
+        actualizar_tablero_enemigo(tablero_oponente, disparo_jugador, resultado_del_disparo_jugador);
 
-        if (resultado == AGUA) {
-            balas_aliadas_erradas++;
-        } else {
-            balas_aliadas_acertadas++;
-        }
+        actualizar_reporte_por_disparo_jugador(resultado_del_disparo_jugador, &balas_aliadas_acertadas, &balas_aliadas_erradas, &barcos_enemigos_hundidos);
 
-        if (resultado == HUNDIDO) {
-            barcos_enemigos_hundidos++;
-        }
-
-        if (barcos_enemigos_hundidos == CANT_BARCOS) {
-            juego_terminado = true;
-        }
+        juego_terminado = (barcos_enemigos_hundidos == CANT_BARCOS);
 
         if (!juego_terminado) {
-
-            coordenada_t disparo_enemigo = oponente_realiza_disparo(oponente);
-
-            procesar_disparo_enemigo(disparo_enemigo, flota_jugador, tablero_jugador);
-
-            if (tablero_jugador[disparo_enemigo.fila - 1][disparo_enemigo.columna - 1] == AGUA) {
-                balas_enemigas_erradas++;
-            } else {
-                balas_enemigas_acertadas++;
-            }
-
-            if (es_flota_jugador_hundida(flota_jugador)) {
-                juego_terminado = true;
-            }
+            juego_terminado = jugar_turno_enemigo(oponente, flota_jugador, tablero_jugador, &balas_enemigas_acertadas, &balas_enemigas_erradas);
         }
     }
 
-    int barcos_aliados_sobrevivientes = 0;
-
-    int i = 0;
-    while (i < CANT_BARCOS) {
-
-        if (!es_barco_hundido(flota_jugador[i])) {
-            barcos_aliados_sobrevivientes++;
-        }
-
-        i++;
-    }
+    int barcos_aliados_sobrevivientes = contar_barcos_aliados_sobrevivientes(flota_jugador);
 
     generar_reporte(
         archivo_reporte,
