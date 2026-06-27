@@ -13,10 +13,14 @@
 #define DIRECCION_SUR 'S'
 #define DIRECCION_ESTE 'E'
 #define DIRECCION_OESTE 'O'
-#define FILA_MIN_TABLERO 1
-#define FILA_MAX_TABLERO 10
-#define COLUMNA_MIN_TABLERO 1
-#define COLUMNA_MAX_TABLERO 10
+#define FILA_MIN_TABLERO 0
+#define FILA_MAX_TABLERO 9
+#define COLUMNA_MIN_TABLERO 0
+#define COLUMNA_MAX_TABLERO 9
+#define FILA_MIN_USUARIO 1
+#define FILA_MAX_USUARIO 10
+#define COLUMNA_MIN_USUARIO 1
+#define COLUMNA_MAX_USUARIO 10
 #define CANT_BARCOS 5
 #define CANT_BARCOS_LARGO_2 1
 #define CANT_BARCOS_LARGO_3 2
@@ -65,8 +69,22 @@ bool validar_argumentos(int argc) {
  * PRE: 
  * POST: 
  */
-bool es_coordenada_valida(coordenada_t coordenada) {
-    return !((coordenada.fila < FILA_MIN_TABLERO) || (coordenada.fila > FILA_MAX_TABLERO) || (coordenada.columna < COLUMNA_MIN_TABLERO) || (coordenada.columna > COLUMNA_MAX_TABLERO));
+bool es_coordenada_valida_tablero(coordenada_t coordenada) {
+    return !((coordenada.fila < FILA_MIN_TABLERO) || 
+             (coordenada.fila > FILA_MAX_TABLERO) || 
+             (coordenada.columna < COLUMNA_MIN_TABLERO) || 
+             (coordenada.columna > COLUMNA_MAX_TABLERO));
+}
+
+/*
+ * PRE: 
+ * POST: 
+ */
+bool es_coordenada_valida_usuario(coordenada_t coordenada) {
+    return ((coordenada.fila >= FILA_MIN_USUARIO) && 
+            (coordenada.fila <= FILA_MAX_USUARIO) && 
+            (coordenada.columna >= COLUMNA_MIN_USUARIO) && 
+            (coordenada.columna <= COLUMNA_MAX_USUARIO));
 }
 
 /*
@@ -101,7 +119,7 @@ int crear_barco(barco_t *barco, coordenada_t coordenada, char direccion, int lar
     }
 
     while (i < barco->largo && es_coordenada_siguiente_valida) {
-        if (!es_coordenada_valida(coordenada)) {
+        if (!es_coordenada_valida_tablero(coordenada)) {
             es_coordenada_siguiente_valida = false;
         }
         else {
@@ -238,6 +256,9 @@ int jugador_crear (FILE* archivo_barcos, barco_t barcos_jugador[CANT_BARCOS]) {
     
     datos_leidos = fscanf(archivo_barcos, FORMATO_ARCHIVO_BARCO, &coordenada.fila, &coordenada.columna, &direccion, &largo);
 
+    coordenada.fila--;
+    coordenada.columna--;
+
     if (datos_leidos == EOF) {
         return ERROR_ARCHIVO_BARCOS_VACIO;
     }
@@ -248,7 +269,7 @@ int jugador_crear (FILE* archivo_barcos, barco_t barcos_jugador[CANT_BARCOS]) {
             error_formato_archivo = true;
         } 
         else {
-            if (!es_coordenada_valida(coordenada) || !es_direccion_valida(direccion) || !es_largo_valido(largo)) {
+            if (!es_coordenada_valida_tablero(coordenada) || !es_direccion_valida(direccion) || !es_largo_valido(largo)) {
                 error_barco_invalido = true;
             }
             else {
@@ -271,6 +292,9 @@ int jugador_crear (FILE* archivo_barcos, barco_t barcos_jugador[CANT_BARCOS]) {
         }
         
         datos_leidos = fscanf(archivo_barcos, FORMATO_ARCHIVO_BARCO, &coordenada.fila, &coordenada.columna, &direccion, &largo);
+
+        coordenada.fila--;
+        coordenada.columna--;
     }
 
     if (error_formato_archivo) {
@@ -326,15 +350,15 @@ void inicializar_estado_flota(estado_barco_t flota_jugador[CANT_BARCOS], barco_t
  * PRE: 
  * POST: 
  */
-void inicializar_tablero(char tablero[FILA_MAX_TABLERO][COLUMNA_MAX_TABLERO]) {
-    int fila = 0;
-    int columna = 0;
+void inicializar_tablero(char tablero[FILA_MAX_TABLERO + 1][COLUMNA_MAX_TABLERO + 1]) {
+    int fila = FILA_MIN_TABLERO;
+    int columna = COLUMNA_MIN_TABLERO;
 
-    while (fila < FILA_MAX_TABLERO) {
+    while (fila <= FILA_MAX_TABLERO) {
 
-        columna = 0;
+        columna = COLUMNA_MIN_TABLERO;
 
-        while (columna < COLUMNA_MAX_TABLERO) {
+        while (columna <= COLUMNA_MAX_TABLERO) {
             tablero[fila][columna] = VACIO;
             columna++;
         }
@@ -347,20 +371,20 @@ void inicializar_tablero(char tablero[FILA_MAX_TABLERO][COLUMNA_MAX_TABLERO]) {
  * PRE: 
  * POST: 
  */
-void cargar_barcos_en_tablero(char tablero[FILA_MAX_TABLERO][COLUMNA_MAX_TABLERO], barco_t barcos_jugador[]) {
+void cargar_barcos_en_tablero(char tablero[FILA_MAX_TABLERO + 1][COLUMNA_MAX_TABLERO + 1], barco_t barcos_jugador[]) {
     int i = 0;
     int j = 0;
 
-    int fila = 0;
-    int columna = 0;
+    int fila = FILA_MIN_TABLERO;
+    int columna = COLUMNA_MIN_TABLERO;
 
     while (i < CANT_BARCOS) {
 
         j = 0;
 
         while (j < barcos_jugador[i].largo) {
-            fila = barcos_jugador[i].posiciones[j].fila - 1;
-            columna = barcos_jugador[i].posiciones[j].columna - 1;
+            fila = barcos_jugador[i].posiciones[j].fila;
+            columna = barcos_jugador[i].posiciones[j].columna;
 
             tablero[fila][columna] = BARCO;
 
@@ -375,26 +399,26 @@ void cargar_barcos_en_tablero(char tablero[FILA_MAX_TABLERO][COLUMNA_MAX_TABLERO
  * PRE: 
  * POST: 
  */
-void mostrar_tableros(char tablero_jugador[FILA_MAX_TABLERO][COLUMNA_MAX_TABLERO], char tablero_oponente[FILA_MAX_TABLERO][COLUMNA_MAX_TABLERO]) {
-    int fila = 0;
-    int columna = 0;
+void mostrar_tableros(char tablero_jugador[FILA_MAX_TABLERO + 1][COLUMNA_MAX_TABLERO + 1], char tablero_oponente[FILA_MAX_TABLERO + 1][COLUMNA_MAX_TABLERO + 1]) {
+    int fila = FILA_MIN_TABLERO;
+    int columna = COLUMNA_MIN_TABLERO;
 
     printf("\nTABLERO JUGADOR\t\tTABLERO OPONENTE\n\n");
 
-    while (fila < FILA_MAX_TABLERO) {
+    while (fila <= FILA_MAX_TABLERO) {
 
-        columna = 0;
+        columna = COLUMNA_MIN_TABLERO;
 
-        while (columna < COLUMNA_MAX_TABLERO) {
+        while (columna <= COLUMNA_MAX_TABLERO) {
             printf("%c ", tablero_jugador[fila][columna]);
             columna++;
         }
 
         printf("\t");
 
-        columna = 0;
+        columna = COLUMNA_MIN_TABLERO;
 
-        while (columna < COLUMNA_MAX_TABLERO) {
+        while (columna <= COLUMNA_MAX_TABLERO) {
             printf("%c ", tablero_oponente[fila][columna]);
             columna++;
         }
@@ -417,7 +441,10 @@ coordenada_t pedir_disparo_jugador()
     do {
         printf("Ingrese disparo dentro del tablero (fila;columna): ");
         scanf(FORMATO_DISPARO_JUGADOR, &disparo.fila, &disparo.columna);
-    } while (!es_coordenada_valida(disparo));
+    } while (!es_coordenada_valida_usuario(disparo));
+
+    disparo.fila--;
+    disparo.columna--;
 
     return disparo;
 }
@@ -426,15 +453,15 @@ coordenada_t pedir_disparo_jugador()
  * PRE: 
  * POST: 
  */
-void actualizar_tablero_enemigo(char tablero_oponente[FILA_MAX_TABLERO][COLUMNA_MAX_TABLERO], coordenada_t disparo_jugador, char resultado_del_disparo_jugador) {
-    tablero_oponente[disparo_jugador.fila - 1][disparo_jugador.columna - 1] = resultado_del_disparo_jugador;
+void actualizar_tablero_enemigo(char tablero_oponente[FILA_MAX_TABLERO + 1][COLUMNA_MAX_TABLERO + 1], coordenada_t disparo_jugador, char resultado_del_disparo_jugador) {
+    tablero_oponente[disparo_jugador.fila][disparo_jugador.columna] = resultado_del_disparo_jugador;
 }
 
 /*
  * PRE: 
  * POST: 
  */
-void procesar_disparo_enemigo(coordenada_t disparo_enemigo, estado_barco_t flota_jugador[CANT_BARCOS], char tablero_jugador[FILA_MAX_TABLERO][COLUMNA_MAX_TABLERO]) {
+void procesar_disparo_enemigo(coordenada_t disparo_enemigo, estado_barco_t flota_jugador[CANT_BARCOS], char tablero_jugador[FILA_MAX_TABLERO + 1][COLUMNA_MAX_TABLERO + 1]) {
     bool impacto = false;
 
     int i = 0;
@@ -448,7 +475,7 @@ void procesar_disparo_enemigo(coordenada_t disparo_enemigo, estado_barco_t flota
 
             if ((flota_jugador[i].barco->posiciones[j].fila == disparo_enemigo.fila) && (flota_jugador[i].barco->posiciones[j].columna == disparo_enemigo.columna)) {
                 flota_jugador[i].impactos[j] = true;
-                tablero_jugador[disparo_enemigo.fila - 1][disparo_enemigo.columna - 1] = TOCADO;
+                tablero_jugador[disparo_enemigo.fila][disparo_enemigo.columna] = TOCADO;
                 impacto = true;
             }
 
@@ -459,7 +486,7 @@ void procesar_disparo_enemigo(coordenada_t disparo_enemigo, estado_barco_t flota
     }
 
     if (!impacto) {
-        tablero_jugador[disparo_enemigo.fila - 1][disparo_enemigo.columna - 1] = AGUA;
+        tablero_jugador[disparo_enemigo.fila][disparo_enemigo.columna] = AGUA;
     }
 }
 
@@ -592,19 +619,22 @@ void actualizar_reporte_por_disparo_jugador(char resultado_disparo, int *balas_a
  * POST: 
  */
 bool jugar_turno_enemigo(oponente_t *oponente, 
-                        estado_barco_t flota_jugador[CANT_BARCOS], 
-                        char tablero_jugador[FILA_MAX_TABLERO][COLUMNA_MAX_TABLERO], 
-                        int *balas_enemigas_acertadas, 
-                        int *balas_enemigas_erradas) {
+                         estado_barco_t flota_jugador[CANT_BARCOS], 
+                         char tablero_jugador[FILA_MAX_TABLERO + 1][COLUMNA_MAX_TABLERO + 1], 
+                         int *balas_enemigas_acertadas, 
+                         int *balas_enemigas_erradas) {
 
-    coordenada_t disparo_enemigo = oponente_realiza_disparo(oponente);
+    coordenada_t disparo_enemigo;
 
-    disparo_enemigo.fila++;
-    disparo_enemigo.columna++;
+    do {
+        disparo_enemigo = oponente_realiza_disparo(oponente);
+    } while (!es_coordenada_valida_tablero(disparo_enemigo));
+
+    printf("Disparo enemigo: %d;%d\n", disparo_enemigo.fila + 1, disparo_enemigo.columna + 1);
 
     procesar_disparo_enemigo(disparo_enemigo, flota_jugador, tablero_jugador);
 
-    if (tablero_jugador[disparo_enemigo.fila - 1][disparo_enemigo.columna - 1] == AGUA) {
+    if (tablero_jugador[disparo_enemigo.fila][disparo_enemigo.columna] == AGUA) {
         (*balas_enemigas_erradas)++;
     } else {
         (*balas_enemigas_acertadas)++;
@@ -676,8 +706,8 @@ int main(int argc, char* argv[]) {
     estado_barco_t flota_jugador[CANT_BARCOS];
     inicializar_estado_flota(flota_jugador, barcos_jugador);
 
-    char tablero_jugador[FILA_MAX_TABLERO][COLUMNA_MAX_TABLERO];
-    char tablero_oponente[FILA_MAX_TABLERO][COLUMNA_MAX_TABLERO];
+    char tablero_jugador[FILA_MAX_TABLERO + 1][COLUMNA_MAX_TABLERO + 1];
+    char tablero_oponente[FILA_MAX_TABLERO + 1][COLUMNA_MAX_TABLERO + 1];
 
     inicializar_tablero(tablero_jugador);
     inicializar_tablero(tablero_oponente);
@@ -694,6 +724,8 @@ int main(int argc, char* argv[]) {
     bool juego_terminado = false;
 
     while (!juego_terminado) {
+
+        // system("clear");
 
         mostrar_tableros(tablero_jugador, tablero_oponente);
 
